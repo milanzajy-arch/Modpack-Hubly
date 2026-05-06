@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Milan's Hub</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial;
+}
+
+body {
+  background: #000;
+  color: white;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* HEADER */
+.header {
+  text-align: center;
+  padding: 14px;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+/* SEARCH */
+.search {
+  padding: 10px;
+}
+
+.search input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  outline: none;
+}
+
+/* UPLOAD */
+.upload {
+  padding: 10px;
+}
+
+input, select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 6px;
+  border-radius: 10px;
+  border: none;
+  outline: none;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  background: white;
+  color: black;
+}
+
+/* PAGE */
+.page {
+  display: none;
+  height: calc(100vh - 140px);
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.activePage {
+  display: block;
+}
+
+/* GRID */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+/* CARD */
+.card {
+  background: #111;
+  border: 1px solid #222;
+  padding: 12px;
+  border-radius: 12px;
+}
+
+.icon {
+  font-size: 22px;
+  margin-bottom: 5px;
+}
+
+.small {
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+/* DELETE */
+.delete {
+  margin-top: 8px;
+  background: red;
+  color: white;
+  padding: 6px;
+  border-radius: 8px;
+  border: none;
+  width: 100%;
+}
+
+/* BOTTOM NAV */
+.nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #111;
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 0;
+  border-top: 1px solid #222;
+}
+
+.nav button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.nav button.active {
+  color: black;
+  background: white;
+  border-radius: 10px;
+  padding: 5px 10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">milan's hub</div>
+
+<!-- SEARCH -->
+<div class="search">
+  <input type="text" id="search" placeholder="Search..." oninput="render()">
+</div>
+
+<!-- PAGES -->
+<div id="home" class="page activePage">
+  <div class="upload">
+    <input type="text" id="creator" placeholder="Nama pembuat">
+    <input type="text" id="name" placeholder="Nama modpack/shaders">
+    <input type="text" id="link" placeholder="Link download">
+
+    <select id="category">
+      <option value="Modpack">Modpack</option>
+      <option value="Shaders">Shaders</option>
+    </select>
+
+    <button onclick="upload()">Upload</button>
+  </div>
+</div>
+
+<div id="modpack" class="page">
+  <div class="grid" id="modpackGrid"></div>
+</div>
+
+<div id="shaders" class="page">
+  <div class="grid" id="shaderGrid"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="nav">
+  <button id="btnHome" class="active" onclick="openPage('home','btnHome')">💦<span>upload</span></button>
+  <button id="btnMod" onclick="openPage('modpack','btnMod')">😹<span>Modpack</span></button>
+  <button id="btnSha" onclick="openPage('shaders','btnSha')">😂<span>Shaders</span></button>
+</div>
+
+<script>
+let data = JSON.parse(localStorage.getItem("mods")) || [];
+
+/* ICON */
+function icon(cat) {
+  return cat === "Modpack" ? "😹" : "😂";
+}
+
+/* NAV PAGE */
+function openPage(page, btnId) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("activePage"));
+  document.getElementById(page).classList.add("activePage");
+
+  document.querySelectorAll(".nav button").forEach(b => b.classList.remove("active"));
+  document.getElementById(btnId).classList.add("active");
+
+  render();
+}
+
+/* UPLOAD */
+function upload() {
+  const creator = document.getElementById("creator").value;
+  const name = document.getElementById("name").value;
+  const link = document.getElementById("link").value;
+  const category = document.getElementById("category").value;
+
+  if (!creator || !name || !link) return alert("Isi semua!");
+
+  data.push({
+    id: Date.now(),
+    creator,
+    name,
+    link,
+    category
+  });
+
+  localStorage.setItem("mods", JSON.stringify(data));
+  render();
+}
+
+/* SEARCH */
+function match(item) {
+  const q = document.getElementById("search").value.toLowerCase();
+  if (!q) return true;
+
+  return item.name.toLowerCase().includes(q) ||
+         item.creator.toLowerCase().includes(q);
+}
+
+/* RENDER */
+function render() {
+  const modpackGrid = document.getElementById("modpackGrid");
+  const shaderGrid = document.getElementById("shaderGrid");
+
+  modpackGrid.innerHTML = "";
+  shaderGrid.innerHTML = "";
+
+  data.filter(i => i.category === "Modpack" && match(i))
+    .reverse()
+    .forEach(i => modpackGrid.innerHTML += card(i));
+
+  data.filter(i => i.category === "Shaders" && match(i))
+    .reverse()
+    .forEach(i => shaderGrid.innerHTML += card(i));
+}
+
+/* CARD */
+function card(item) {
+  return `
+    <div class="card">
+      <div class="icon">${icon(item.category)}</div>
+      <b>${item.name}</b>
+      <div class="small">by ${item.creator}</div>
+      <a href="${item.link}" target="_blank" style="color:white;">Download</a>
+      <button class="delete" onclick="hapus(${item.id})">Hapus</button>
+    </div>
+  `;
+}
+
+/* DELETE */
+function hapus(id) {
+  data = data.filter(i => i.id !== id);
+  localStorage.setItem("mods", JSON.stringify(data));
+  render();
+}
+
+render();
+</script>
+
+</body>
+</html>
